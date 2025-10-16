@@ -1,0 +1,85 @@
+from sage.all import *
+#algorithm to take a polytope and turn it into a cone and then polytope to be used later
+def cone(P):
+    #get the A and B matrices (if no equalities A is the zero matrix)
+    B = P.inequalities_list()
+    A = P.equations_list()
+    if Set(A).is_empty():
+        A = zero_matrix(ZZ,len(B[0])-1,len(B[0]))
+    #empty list to hold the equalities of the cone
+    eqs = []
+    #append A to the equalities list
+    for x in A:
+        e = zero_vector(QQ,len(A[0]) + len(B) + len(B))
+        for i in range(1,len(A[0])):
+            e[i+1] = x[i]
+        eqs.append(e)
+    #append B and the identities to the equalities list
+    for x in range(0,len(B)):
+        e = zero_vector(QQ,len(B[0]) + len(B) + len(B))
+        e[len(B[0]) + x] = -1
+        e[len(B[0]) + len(B) + x] = 1
+        for i in range(1,len(B[0])):
+            e[i] = B[x][i]
+        eqs.append(e)
+    #append the final row ensuring y+ + y- = 1
+    e = zero_vector(QQ,len(A[0]) + len(B) + len(B))
+    e[0] = -1
+    for i in range(len(A[0]),len(A[0]) + len(B) + len(B)):
+        e[i] = 1
+    eqs.append(e)
+    #empty list to hold the inequalities
+    ieqs = []
+    #append identities to the inequalities
+    for x in range(0,len(B)):
+        e = zero_vector(QQ,len(B[0]) + len(B) + len(B))
+        e[len(B[0]) + x] = 1
+        ieqs.append(e)
+    for x in range(0,len(B)):
+        e = zero_vector(QQ,len(B[0]) + len(B) + len(B))
+        e[len(B[0]) + len(B) + x] = 1
+        ieqs.append(e)
+    #declare the polytope based on the equalities and inequalities
+    Poly = Polyhedron(eqns = eqs, ieqs=ieqs)
+    #feed the polytope and the vertex sizes into the circuit algorithm
+    return circuits(Poly,len(B[0])-1,len(B))
+
+
+#take the polytope and vertex sizes and return the circuits from the original polytope
+def circuits(P,n,m):
+    #empty list to hold the circuits
+    C = []
+    #get-vertex function and get the number of vertices
+    V = P.vertices_list()
+    length = len(V[0])
+    #Loop through the vertices
+    for i in V:
+        #break the vertex into its three parts
+        x = zero_vector(QQ,n).column()
+        plus = zero_vector(QQ,m).column()
+        minus = zero_vector(QQ,m).column()
+        #get the potencial circuit
+        for j in range(0,n):
+            x[j] = i[j]
+        #get y+
+        for j in range(n,n+m):
+            plus[j-n] = i[j]
+        #get y-
+        for j in range(n+m,length):
+            minus[j-n-m] = i[j]
+        #find the difference
+        dif = plus - minus
+        #check that the difference is not zero
+        if dif != 0:
+            k = 0
+            #check if the circuit is already present
+            for c in C:
+                if x == c:
+                    k = 1
+                elif x == -c:
+                    k = 1
+            #if not present, append the circuit to the list
+            if k == 0:
+                C.append(x)
+    print(C)
+    return C
