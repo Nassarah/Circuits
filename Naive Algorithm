@@ -1,0 +1,58 @@
+% Take a matrix of inequalities and find the circuits
+function NaiveCircuitEnumeration = NCE(M)
+% find the rank of M
+r = rank(M);
+% Get the dimensions of M
+[row,cols] = size(M);
+% Create a matrix to hold all circuits (can have any number of rows, just
+% add later)
+C = zeros(2, cols);
+% set the count for later
+C(1,1) = 2;
+% set an empty matrix to hold r-1 facets
+m = zeros(r-1,cols);
+% plug all things into the combo function
+C = Co(M, r-1, 1, m, C);
+% delete count (not needed any more)
+C(1,:) = [];
+% return the set of circuits nicer
+BestFunctionYet = C';
+end
+
+% Better Combo function that recursively checks all row choose (r-1) combinations
+function Combination = Co(M, length, start, m, C)
+if length == 0
+    % check for the proper rank
+    if rank(m) == rank(M)-1
+        % find the null
+        c = round(null(m),14)';
+        % set variable
+        k = 0;
+        for i=2:size(C,1)
+            if c == C(i,:)
+                % if c in C, change k
+                k = 1;
+            elseif c == -C(i,:)
+                % if -c in C, change k
+                k = 1;
+            end
+        end
+        % check to see if k is changed (c already in C)
+        if k == 0
+            % update C using the count from before
+            C(C(1,1),:) = c;
+            % update count
+            C(1,1) = C(1,1)+1;
+        end
+    end
+else
+    for i=start:size(M,1)-length+1
+        % add a row to m
+        m(size(m,1)-length + 1,:) = M(i,:);
+        % plug everything back into combo function with updates
+        C = Co(M, length - 1, i + 1, m, C);
+    end
+end
+% return the updated set of circuits
+Combination = C;
+end
